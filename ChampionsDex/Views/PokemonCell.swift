@@ -5,38 +5,23 @@ struct PokemonCell: View {
     var viewModel: AppViewModel
 
     private var dexNumber: Int? { viewModel.details[entry.id]?.number }
+    private var spriteURL: URL? {
+        guard let urlStr = viewModel.details[entry.id]?.forms.first?.imageURL,
+              !urlStr.isEmpty else { return nil }
+        return URL(string: urlStr)
+    }
 
     var body: some View {
         VStack(spacing: 2) {
-            ZStack {
-                if let img = viewModel.icons[entry.id] {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
+            AsyncImage(url: spriteURL) { phase in
+                if let img = phase.image {
+                    img.resizable().scaledToFit()
                 } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(.systemGray6))
-                            .frame(width: 72, height: 72)
-
-                        VStack(spacing: 2) {
-                            Image(systemName: "questionmark.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundStyle(Color(.systemGray3))
-                            if entry.iconCached {
-                                // Icon file exists but not yet loaded into memory — neutral gray
-                                EmptyView()
-                            } else {
-                                // Never fetched
-                                Text("?")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(Color(.systemGray3))
-                            }
-                        }
-                    }
+                    Color(.systemGray6)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
             }
+            .frame(width: 72, height: 72)
 
             Text(entry.name)
                 .font(.caption)
@@ -49,16 +34,10 @@ struct PokemonCell: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             } else {
-                // Reserve space so cells stay the same height
                 Text(" ")
                     .font(.caption2)
             }
         }
         .frame(width: 90, height: 110)
-        .task {
-            if entry.iconCached {
-                await viewModel.loadIconIfNeeded(slug: entry.id)
-            }
-        }
     }
 }

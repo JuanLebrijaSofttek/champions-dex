@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 final class PersistenceManager {
     static let shared = PersistenceManager()
@@ -12,7 +11,6 @@ final class PersistenceManager {
         print("💾⏳ [Persistence] Root: \(root.path)")
         do {
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(at: root.appendingPathComponent("icons"), withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: root.appendingPathComponent("details"), withIntermediateDirectories: true)
             print("💾✅ [Persistence] Directories ready")
         } catch {
@@ -47,38 +45,6 @@ final class PersistenceManager {
             print("💾✅ [Persistence] saveRoster — \(roster.count) entries, \(data.count) bytes")
         } catch {
             print("💾❌ [Persistence] saveRoster — \(error)")
-        }
-    }
-
-    // MARK: Icons
-
-    func iconExists(slug: String) -> Bool {
-        FileManager.default.fileExists(atPath: iconURL(slug: slug).path)
-    }
-
-    func loadIcon(slug: String) -> UIImage? {
-        guard let data = try? Data(contentsOf: iconURL(slug: slug)) else {
-            print("💾⏳ [Persistence] loadIcon(\(slug)) — not on disk")
-            return nil
-        }
-        guard let img = UIImage(data: data) else {
-            print("💾❌ [Persistence] loadIcon(\(slug)) — invalid image data")
-            return nil
-        }
-        print("💾✅ [Persistence] loadIcon(\(slug)) — \(data.count) bytes")
-        return img
-    }
-
-    func saveIcon(_ image: UIImage, slug: String) {
-        guard let data = image.pngData() else {
-            print("💾❌ [Persistence] saveIcon(\(slug)) — pngData() nil")
-            return
-        }
-        do {
-            try data.write(to: iconURL(slug: slug), options: .atomic)
-            print("💾✅ [Persistence] saveIcon(\(slug)) — \(data.count) bytes")
-        } catch {
-            print("💾❌ [Persistence] saveIcon(\(slug)) — \(error)")
         }
     }
 
@@ -136,6 +102,5 @@ final class PersistenceManager {
 
     // MARK: Helpers
 
-    private func iconURL(slug: String) -> URL { root.appendingPathComponent("icons/\(slug).png") }
     private func detailURL(slug: String) -> URL { root.appendingPathComponent("details/\(slug).json") }
 }

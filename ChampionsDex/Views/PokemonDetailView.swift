@@ -51,16 +51,9 @@ struct PokemonDetailView: View {
         VStack(spacing: 20) {
             Spacer()
 
-            if let img = viewModel.icons[slug] {
-                Image(uiImage: img)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-            } else {
-                Image(systemName: "questionmark.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color(.systemGray3))
-            }
+            Image(systemName: "questionmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(Color(.systemGray3))
 
             Text("Loading \(slug.capitalized)...")
                 .font(.title3.weight(.semibold))
@@ -266,17 +259,10 @@ struct PokemonDetailView: View {
 
     @ViewBuilder
     private func iconPlaceholder(slug: String) -> some View {
-        if let img = viewModel.icons[slug] {
-            Image(uiImage: img)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 120, height: 120)
-        } else {
-            Image(systemName: "questionmark.circle.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(Color(.systemGray3))
-                .frame(width: 120, height: 120)
-        }
+        Image(systemName: "questionmark.circle.fill")
+            .font(.system(size: 80))
+            .foregroundStyle(Color(.systemGray3))
+            .frame(width: 120, height: 120)
     }
 
     // MARK: Gender pill

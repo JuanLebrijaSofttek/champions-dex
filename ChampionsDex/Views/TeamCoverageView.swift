@@ -83,21 +83,24 @@ struct TeamCoverageView: View {
     @ViewBuilder
     private func slotRow(index: Int) -> some View {
         HStack(spacing: 8) {
-            if let slug = teamSlugs[index], let img = viewModel.icons[slug] {
-                Image(uiImage: img)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-            } else {
-                ZStack {
-                    Circle()
-                        .fill(Color(.systemGray5))
-                        .frame(width: 32, height: 32)
+            let spriteURL: URL? = teamSlugs[index].flatMap { slug -> URL? in
+                guard let urlStr = viewModel.details[slug]?.forms.first?.imageURL else { return nil }
+                return URL(string: urlStr)
+            }
+            ZStack {
+                if spriteURL != nil {
+                    AsyncImage(url: spriteURL) { phase in
+                        if let img = phase.image { img.resizable().scaledToFit() }
+                        else { Circle().fill(Color(.systemGray5)) }
+                    }
+                } else {
+                    Circle().fill(Color(.systemGray5))
                     Text("\(index + 1)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
             }
+            .frame(width: 32, height: 32)
 
             TextField("Search Pokémon...", text: $queries[index])
                 .focused($focusedSlot, equals: index)
@@ -147,16 +150,13 @@ struct TeamCoverageView: View {
                         focusedSlot = nil
                     } label: {
                         HStack(spacing: 10) {
-                            if let img = viewModel.icons[entry.id] {
-                                Image(uiImage: img)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 28, height: 28)
-                            } else {
-                                Circle()
-                                    .fill(Color(.systemGray5))
-                                    .frame(width: 28, height: 28)
+                            let urlStr: String? = viewModel.details[entry.id]?.forms.first?.imageURL
+                            let spriteURL: URL? = urlStr.flatMap { URL(string: $0) }
+                            AsyncImage(url: spriteURL) { phase in
+                                if let img = phase.image { img.resizable().scaledToFit() }
+                                else { Circle().fill(Color(.systemGray5)) }
                             }
+                            .frame(width: 28, height: 28)
                             Text(entry.name)
                                 .foregroundStyle(.primary)
                             Spacer()
@@ -188,11 +188,15 @@ struct TeamCoverageView: View {
 
             ForEach(0..<6, id: \.self) { index in
                 Group {
-                    if let slug = teamSlugs[index], let img = viewModel.icons[slug] {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 26, height: 26)
+                    let spriteURL: URL? = teamSlugs[index].flatMap { slug -> URL? in
+                        guard let urlStr = viewModel.details[slug]?.forms.first?.imageURL else { return nil }
+                        return URL(string: urlStr)
+                    }
+                    if spriteURL != nil {
+                        AsyncImage(url: spriteURL) { phase in
+                            if let img = phase.image { img.resizable().scaledToFit().frame(width: 26, height: 26) }
+                            else { Text("\(index + 1)").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary) }
+                        }
                     } else {
                         Text("\(index + 1)")
                             .font(.system(size: 11, weight: .semibold))

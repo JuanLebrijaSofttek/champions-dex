@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 import SwiftSoup
 
 struct SerebiiService {
@@ -43,46 +42,6 @@ struct SerebiiService {
         print("🔍⏳ [Serebii] fetchRoster — skips: hub=\(skippedHub) shtml=\(skippedShtml) dupe=\(skippedDupe) noName=\(skippedNoName)")
         print("🌐✅ [Serebii] fetchRoster — \(results.count) Pokémon: \(results.prefix(10).map { "\($0.name)(\($0.slug))" }.joined(separator: ", "))")
         return results
-    }
-
-    // MARK: Icon
-
-    func fetchIcon(slug: String) async throws -> UIImage {
-        let pageURL = URL(string: "\(Self.base)/pokedex-champions/\(slug)/")!
-        print("🌐⏳ [Serebii] fetchIcon(\(slug)) — parsing page")
-        let html = try await fetchHTML(url: pageURL)
-        let doc = try SwiftSoup.parse(html)
-        let imgs = try doc.select("img")
-        print("🔍⏳ [Serebii] fetchIcon(\(slug)) — \(imgs.count) img tags")
-
-        var iconSrc: String? = nil
-        for img in imgs {
-            let src = try img.attr("src")
-            if src.contains("/pokedex-champions/icon/") {
-                iconSrc = src
-                print("🔍✅ [Serebii] fetchIcon(\(slug)) — matched: \(src)")
-                break
-            }
-        }
-
-        guard let src = iconSrc else {
-            let allSrcs = (try? imgs.map { try $0.attr("src") }.prefix(10).joined(separator: " | ")) ?? "?"
-            print("🌐❌ [Serebii] fetchIcon(\(slug)) — no icon src. First 10: \(allSrcs)")
-            throw SerebiiError.iconNotFound(slug)
-        }
-
-        let absoluteURL = src.hasPrefix("http") ? URL(string: src)! : URL(string: "\(Self.base)\(src)")!
-        print("🌐⏳ [Serebii] fetchIcon(\(slug)) — fetching \(absoluteURL)")
-        let (data, response) = try await URLSession.shared.data(from: absoluteURL)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-        print("🌐\(status == 200 ? "✅" : "❌") [Serebii] fetchIcon(\(slug)) — HTTP \(status) \(data.count) bytes")
-
-        guard let image = UIImage(data: data) else {
-            print("🌐❌ [Serebii] fetchIcon(\(slug)) — UIImage init failed")
-            throw SerebiiError.invalidImageData(slug)
-        }
-        print("🖼️✅ [Serebii] fetchIcon(\(slug)) — \(image.size.width)x\(image.size.height)")
-        return image
     }
 
     // MARK: Detail
@@ -563,7 +522,5 @@ struct SerebiiService {
 }
 
 enum SerebiiError: Error {
-    case iconNotFound(String)
-    case invalidImageData(String)
     case parseError(String)
 }
