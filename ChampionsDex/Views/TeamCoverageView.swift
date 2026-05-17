@@ -170,7 +170,7 @@ struct TeamCoverageView: View {
                 }
             }
         }
-        .frame(maxHeight: 220)
+        .frame(height: min(CGFloat(activeFiltered.count) * 40, 220))
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
@@ -251,7 +251,7 @@ struct TeamCoverageView: View {
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(weakCount > 0 ? .white : .clear)
                         .frame(width: 44, height: 36)
-                        .background(weakCount > 0 ? Color.red.opacity(0.65) : Color(.systemGray6).opacity(0.4))
+                        .background(weakCount > 0 ? Color.red.opacity(countOpacity(weakCount)) : Color(.systemGray6).opacity(0.4))
                 } else {
                     Text("")
                         .frame(width: 44, height: 36)
@@ -266,7 +266,7 @@ struct TeamCoverageView: View {
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(resistCount > 0 ? .white : .clear)
                         .frame(width: 44, height: 36)
-                        .background(resistCount > 0 ? Color.green.opacity(0.65) : Color(.systemGray6).opacity(0.4))
+                        .background(resistCount > 0 ? Color.green.opacity(countOpacity(resistCount)) : Color(.systemGray6).opacity(0.4))
                 } else {
                     Text("")
                         .frame(width: 44, height: 36)
@@ -301,6 +301,11 @@ struct TeamCoverageView: View {
     }
 
     // MARK: Helpers
+
+    private func countOpacity(_ count: Int) -> Double {
+        guard count > 0 else { return 0 }
+        return 0.3 + Double(count - 1) / 5.0 * 0.7
+    }
 
     private func cellStyle(for multiplier: Double) -> (String, Color) {
         switch multiplier {
