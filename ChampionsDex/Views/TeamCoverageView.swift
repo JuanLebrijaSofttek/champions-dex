@@ -1,5 +1,12 @@
 import SwiftUI
 
+private struct SlotFrameKey: PreferenceKey {
+    static var defaultValue: [Int: CGRect] = [:]
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct TeamCoverageView: View {
     var viewModel: AppViewModel
 
@@ -11,6 +18,7 @@ struct TeamCoverageView: View {
 
     @State private var teamSlugs: [String?] = Array(repeating: nil, count: 6)
     @State private var queries: [String] = Array(repeating: "", count: 6)
+    @State private var slotFrames: [Int: CGRect] = [:]
     @FocusState private var focusedSlot: Int?
 
     private var activeFiltered: [RosterEntry] {
@@ -26,25 +34,20 @@ struct TeamCoverageView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                VStack(spacing: 4) {
-                    ForEach(0..<6, id: \.self) { index in
-                        slotRow(index: index)
+            ZStack(alignment: .top) {
+                ScrollView(.vertical) {
+                    VStack(spacing: 4) {
+                        ForEach(0..<6, id: \.self) { index in
+                            slotRow(index: index)
+                        }
                     }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                    .onPreferenceChange(SlotFrameKey.self) { slotFrames = $0 }
 
-                if !activeFiltered.isEmpty {
-                    autocompleteList
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 4)
-                }
+                    Divider()
 
-                Divider()
-
-                ScrollView([.horizontal, .vertical]) {
                     VStack(spacing: 0) {
                         tableHeaderRow
                         ForEach(Array(allTypes.enumerated()), id: \.element) { rowIndex, type in
@@ -57,7 +60,19 @@ struct TeamCoverageView: View {
                         await viewModel.loadDetail(slug: slug)
                     }
                 }
+
+                if !activeFiltered.isEmpty,
+                   let slot = focusedSlot,
+                   let frame = slotFrames[slot],
+                   frame != .zero
+                {
+                    autocompleteList
+                        .padding(.horizontal, 16)
+                        .offset(y: frame.maxY + 4)
+                        .zIndex(10)
+                }
             }
+            .coordinateSpace(name: "teamView")
             .navigationTitle("Team Coverage")
             .navigationBarTitleDisplayMode(.large)
         }
@@ -109,6 +124,14 @@ struct TeamCoverageView: View {
         .padding(.vertical, 6)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: SlotFrameKey.self,
+                    value: [index: geo.frame(in: .named("teamView"))]
+                )
+            }
+        )
     }
 
     // MARK: Autocomplete list
