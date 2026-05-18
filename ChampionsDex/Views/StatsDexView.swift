@@ -29,7 +29,7 @@ private enum StatColumn: CaseIterable, Hashable {
         }
     }
 
-    var width: CGFloat { self == .total ? 30 : 26 }
+    var width: CGFloat { 36 }
 }
 
 // MARK: - StatsDexView
@@ -40,12 +40,43 @@ struct StatsDexView: View {
     @State private var sortColumn: StatColumn? = nil
     @State private var sortDescending: Bool = true
 
-    private var displayedRoster: [RosterEntry] {
-        guard let col = sortColumn else { return viewModel.roster }
-        return viewModel.roster.sorted { a, b in
-            let sa = viewModel.details[a.id]?.forms.first?.stats
-            let sb = viewModel.details[b.id]?.forms.first?.stats
-            switch (sa, sb) {
+    // MARK: FormRow
+
+    private struct FormRow: Identifiable {
+        let id: String
+        let entry: RosterEntry
+        let stats: Stats?
+        let imageURL: URL?
+        let formLabel: String?  // nil for base/single form; "Mega X", "Alolan", etc. for alternates
+    }
+
+    private var allRows: [FormRow] {
+        viewModel.roster.flatMap { entry -> [FormRow] in
+            guard let detail = viewModel.details[entry.id] else {
+                return [FormRow(id: entry.id, entry: entry, stats: nil, imageURL: nil, formLabel: nil)]
+            }
+            return detail.forms.enumerated().map { formIndex, form in
+                let prefix = form.formName
+                    .replacingOccurrences(of: entry.name, with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                let label: String? = (detail.forms.count > 1 && formIndex > 0 && !prefix.isEmpty) ? prefix : nil
+                let urlStr: String? = form.imageURL.isEmpty ? nil : form.imageURL
+                let url: URL? = urlStr.flatMap { URL(string: $0) }
+                return FormRow(
+                    id: "\(entry.id)-\(formIndex)",
+                    entry: entry,
+                    stats: form.stats,
+                    imageURL: url,
+                    formLabel: label
+                )
+            }
+        }
+    }
+
+    private var displayedRows: [FormRow] {
+        guard let col = sortColumn else { return allRows }
+        return allRows.sorted { a, b in
+            switch (a.stats, b.stats) {
             case (nil, nil): return false
             case (nil, _):   return false
             case (_, nil):   return true
@@ -64,8 +95,8 @@ struct StatsDexView: View {
                 Divider()
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(displayedRoster.enumerated()), id: \.element.id) { idx, entry in
-                            statRow(entry: entry, rowIndex: idx)
+                        ForEach(Array(displayedRows.enumerated()), id: \.element.id) { idx, row in
+                            statRow(row: row, rowIndex: idx)
                         }
                     }
                 }
@@ -82,7 +113,7 @@ struct StatsDexView: View {
             Color.clear.frame(width: 40, height: 28)
 
             Text("Name")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -90,7 +121,7 @@ struct StatsDexView: View {
                 sortButton(col)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 10)
         .background(Color(.systemGray5))
     }
 
@@ -100,7 +131,7 @@ struct StatsDexView: View {
         Button { handleTap(col) } label: {
             HStack(spacing: 1) {
                 Text(col.label)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(isActive ? Color.primary : Color.secondary)
                 if isActive {
                     Image(systemName: sortDescending ? "chevron.down" : "chevron.up")
@@ -116,25 +147,28 @@ struct StatsDexView: View {
 
     // MARK: Stat row
 
-    private func statRow(entry: RosterEntry, rowIndex: Int) -> some View {
-        let detail = viewModel.details[entry.id]
-        let stats: Stats? = detail?.forms.first?.stats
-        let imageURLStr: String? = detail?.forms.first?.imageURL
-        let spriteURL: URL? = imageURLStr.flatMap { URL(string: $0) }
+    private func statRow(row: FormRow, rowIndex: Int) -> some View {
         let bg: Color = rowIndex % 2 == 0 ? Color(.systemBackground) : Color(.systemGray6).opacity(0.25)
 
         return HStack(spacing: 0) {
-            spriteImage(url: spriteURL)
+            spriteImage(url: row.imageURL)
                 .padding(.trailing, 4)
 
-            Text(entry.name)
-                .font(.system(size: 11))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.entry.name)
+                    .font(.system(size: 11))
+                    .lineLimit(1)
+                if let label = row.formLabel {
+                    Text(label)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             ForEach(StatColumn.allCases, id: \.self) { col in
-                self.statCell(stats: stats, col: col)
+                self.statCell(stats: row.stats, col: col)
             }
         }
         .padding(.horizontal, 16)
@@ -158,12 +192,12 @@ struct StatsDexView: View {
     private func statCell(stats: Stats?, col: StatColumn) -> some View {
         if let s = stats {
             Text("\(s[keyPath: col.keyPath])")
-                .font(.system(size: 10).monospacedDigit())
+                .font(.system(size: 14).monospacedDigit())
                 .foregroundStyle(col == .total ? Color.primary : Color.secondary)
                 .frame(width: col.width, alignment: .trailing)
         } else {
             Text("—")
-                .font(.system(size: 10))
+                .font(.system(size: 14))
                 .foregroundStyle(Color(.systemGray4))
                 .frame(width: col.width, alignment: .trailing)
         }
