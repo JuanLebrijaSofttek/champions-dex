@@ -58,8 +58,9 @@ import Observation
             }
             group.addTask {
                 try? await Task.sleep(for: timeout)
-                print("📡⏳ [NetworkMonitor] Timeout — falling back to isConnected=\(self.isConnected)")
-                return self.isConnected
+                let connected = await MainActor.run { self.isConnected }
+                print("📡⏳ [NetworkMonitor] Timeout — falling back to isConnected=\(connected)")
+                return connected
             }
             let result = await group.next()!
             group.cancelAll()

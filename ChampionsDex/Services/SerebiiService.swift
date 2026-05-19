@@ -226,7 +226,7 @@ struct SerebiiService {
                 var name = ""
                 var el: Element? = img.parent()
                 while let e = el, name.isEmpty {
-                    let own = (try? e.ownText())?.trimmingCharacters(in: .whitespaces) ?? ""
+                    let own = e.ownText().trimmingCharacters(in: .whitespaces)
                     if !own.isEmpty { name = own; break }
                     el = e.parent()
                 }
