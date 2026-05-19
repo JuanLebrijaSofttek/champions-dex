@@ -55,7 +55,8 @@ struct StatsDexView: View {
             guard let detail = viewModel.details[entry.id] else {
                 return [FormRow(id: entry.id, entry: entry, stats: nil, imageURL: nil, formLabel: nil)]
             }
-            return detail.forms.enumerated().map { formIndex, form in
+            return detail.forms.enumerated().compactMap { formIndex, form in
+                guard form.stats.total > 0 else { return nil }
                 let prefix = form.formName
                     .replacingOccurrences(of: entry.name, with: "")
                     .trimmingCharacters(in: .whitespaces)
@@ -182,7 +183,11 @@ struct StatsDexView: View {
             if let img = phase.image {
                 img.resizable().scaledToFit()
             } else {
-                Circle().fill(Color(.systemGray5))
+                Image("PokeballIcon")
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundStyle(Color(.systemGray5))
+                    .scaledToFit()
             }
         }
         .frame(width: 36, height: 36)

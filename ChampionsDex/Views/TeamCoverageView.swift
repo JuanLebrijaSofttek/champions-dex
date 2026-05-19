@@ -33,8 +33,7 @@ struct TeamCoverageView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .top) {
+        ZStack(alignment: .top) {
                 ScrollView(.vertical) {
                     VStack(spacing: 4) {
                         ForEach(0..<6, id: \.self) { index in
@@ -72,10 +71,9 @@ struct TeamCoverageView: View {
                         .zIndex(10)
                 }
             }
-            .coordinateSpace(name: "teamView")
-            .navigationTitle("Team Coverage")
-            .navigationBarTitleDisplayMode(.large)
-        }
+        .coordinateSpace(name: "teamView")
+        .navigationTitle("Defense")
+        .navigationBarTitleDisplayMode(.large)
     }
 
     // MARK: Slot row
@@ -91,10 +89,20 @@ struct TeamCoverageView: View {
                 if spriteURL != nil {
                     AsyncImage(url: spriteURL) { phase in
                         if let img = phase.image { img.resizable().scaledToFit() }
-                        else { Circle().fill(Color(.systemGray5)) }
+                        else {
+                            Image("PokeballIcon")
+                                .resizable()
+                                .renderingMode(.template)
+                                .foregroundStyle(Color(.systemGray5))
+                                .scaledToFit()
+                        }
                     }
                 } else {
-                    Circle().fill(Color(.systemGray5))
+                    Image("PokeballIcon")
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundStyle(Color(.systemGray5))
+                        .scaledToFit()
                     Text("\(index + 1)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -154,7 +162,13 @@ struct TeamCoverageView: View {
                             let spriteURL: URL? = urlStr.flatMap { URL(string: $0) }
                             AsyncImage(url: spriteURL) { phase in
                                 if let img = phase.image { img.resizable().scaledToFit() }
-                                else { Circle().fill(Color(.systemGray5)) }
+                                else {
+                                    Image("PokeballIcon")
+                                        .resizable()
+                                        .renderingMode(.template)
+                                        .foregroundStyle(Color(.systemGray5))
+                                        .scaledToFit()
+                                }
                             }
                             .frame(width: 28, height: 28)
                             Text(entry.name)

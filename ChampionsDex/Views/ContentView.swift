@@ -29,8 +29,8 @@ struct ContentView: View {
                 TabView {
                     PokedexGridView(viewModel: viewModel, networkMonitor: networkMonitor)
                         .tabItem { Label("Pokédex", systemImage: "list.bullet") }
-                    TeamCoverageView(viewModel: viewModel)
-                        .tabItem { Label("Team", systemImage: "person.3.fill") }
+                    CoverageView(viewModel: viewModel)
+                        .tabItem { Label("Coverage", systemImage: "shield.lefthalf.filled.slash") }
                     StatsDexView(viewModel: viewModel)
                         .tabItem { Label("Stats", systemImage: "chart.bar.fill") }
                     SettingsView(viewModel: viewModel, networkMonitor: networkMonitor)

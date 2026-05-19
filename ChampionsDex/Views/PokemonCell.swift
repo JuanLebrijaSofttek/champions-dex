@@ -17,8 +17,11 @@ struct PokemonCell: View {
                 if let img = phase.image {
                     img.resizable().scaledToFit()
                 } else {
-                    Color(.systemGray6)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    Image("PokeballIcon")
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundStyle(Color(.systemGray6))
+                        .scaledToFit()
                 }
             }
             .frame(width: 72, height: 72)
