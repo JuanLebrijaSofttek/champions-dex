@@ -11,8 +11,11 @@ import Observation
     var bulkDetailProgress: (current: Int, total: Int)? = nil
     var currentBulkSlug: String? = nil
 
-    private let persistence = PersistenceManager.shared
-    private let service = SerebiiService()
+    private let persistence     = PersistenceManager.shared
+    private let serebiiService  = SerebiiService()
+    private let pokeAPIService  = PokeAPIService()
+    private let typeChartCache  = TypeChartCache()
+    private let moveCache       = MoveCache()
     private var bulkDownloadTask: Task<Void, Never>?
 
     // MARK: Launch
@@ -47,7 +50,7 @@ import Observation
         loadingMessage = "Syncing Pokémon roster..."
         print("🚀⏳ [ViewModel] Phase 3 — fetching roster")
         do {
-            let fetched = try await service.fetchRoster()
+            let fetched = try await serebiiService.fetchRoster()
             let existingSlugs = Set(roster.map { $0.id })
             let newEntries = fetched.filter { !existingSlugs.contains($0.slug) }
             print("🚀✅ [ViewModel] Phase 3 — fetched=\(fetched.count) existing=\(existingSlugs.count) new=\(newEntries.count)")
@@ -61,6 +64,16 @@ import Observation
         } catch {
             print("🚀❌ [ViewModel] Phase 3 — fetchRoster FAILED: \(error)")
             if roster.isEmpty { appState = .noDataOffline; return }
+        }
+
+        // Phase 3.5 — preload type chart (18 parallel PokéAPI fetches)
+        loadingMessage = "Loading type chart..."
+        print("🚀⏳ [ViewModel] Phase 3.5 — preloading type chart")
+        do {
+            try await typeChartCache.preloadAll(service: pokeAPIService)
+            print("🚀✅ [ViewModel] Phase 3.5 — type chart ready")
+        } catch {
+            print("🚀❌ [ViewModel] Phase 3.5 — type chart preload FAILED: \(error) (will retry per-Pokémon)")
         }
 
         appState = .ready
@@ -82,7 +95,13 @@ import Observation
         detailLoadingProgress = 0.0
         print("🌐⏳ [ViewModel] loadDetail(\(slug)) — fetching from network")
         do {
-            let detail = try await service.fetchDetail(slug: slug) { [weak self] label, pct in
+            let formData = try await serebiiService.fetchFormData(slug: slug)
+            let detail = try await pokeAPIService.fetchDetail(
+                slug: slug,
+                formData: formData,
+                typeChartCache: typeChartCache,
+                moveCache: moveCache
+            ) { [weak self] label, pct in
                 Task { @MainActor [weak self] in
                     self?.detailLoadingLabel = label
                     self?.detailLoadingProgress = pct
@@ -121,11 +140,7 @@ import Observation
                 guard !Task.isCancelled else { print("📥⏳ [ViewModel] bulk cancelled at \(slug)"); break }
                 currentBulkSlug = slug
                 bulkDetailProgress = (current: i, total: total)
-                let wasOnDisk = persistence.detailExists(slug: slug)
                 await loadDetail(slug: slug)
-                if !wasOnDisk {
-                    try? await Task.sleep(for: .milliseconds(500))
-                }
             }
             currentBulkSlug = nil
             bulkDetailProgress = (current: total, total: total)
